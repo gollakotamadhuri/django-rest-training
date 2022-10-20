@@ -10,7 +10,7 @@ TAG_URL = reverse("recipe:tag-list")
 
 
 def detail_url(tag_id):
-    return reverse("recipe:recipe-detail", args=[tag_id])
+    return reverse("recipe:tag-detail", args=[tag_id])
 
 
 def create_user(email="sampleuser@example.com", password="samplepass"):
@@ -63,13 +63,9 @@ class PrivateTagAPiTests(TestCase):
         """Test updating a tag."""
         tag = Tag.objects.create(user=self.user, name="After Dinner")
 
-        print(Tag.objects.all())
-
         payload = {"name": "Dessert"}
         url = detail_url(tag.id)
         res = self.client.patch(url, payload)
-
-        print(Tag.objects.all())
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         tag.refresh_from_db()

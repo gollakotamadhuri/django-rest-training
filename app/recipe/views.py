@@ -1,10 +1,10 @@
-from core.models import Recipe, Tag
-from django.shortcuts import render
-from rest_framework import mixins, viewsets
+from core.models import Ingredient, Recipe, Tag
+from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 from recipe.serializers import (
+    IngredientSerializer,
     RecipeDetailSerializer,
     RecipeSerializer,
     TagSerializer,
@@ -33,16 +33,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class TagViewSet(
-    mixins.DestroyModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet,
-):
-    serializer_class = TagSerializer
-    queryset = Tag.objects.all()
+class BaseRecipeAttrViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user).order_by("-name")
+
+
+class TagViewSet(BaseRecipeAttrViewSet):
+    serializer_class = TagSerializer
+    queryset = Tag.objects.all()
+
+
+class IngredientViewSet(BaseRecipeAttrViewSet):
+    serializer_class = IngredientSerializer
+    queryset = Ingredient.objects.all()
