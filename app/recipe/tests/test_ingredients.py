@@ -76,3 +76,35 @@ class PrivateIngredientsApiTests(TestCase):
         res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Ingredient.objects.filter(id=ingredient.id))
+
+    def test_filter_ingredients_assigned(self):
+        ing1 = Ingredient.objects.create(user=self.user, name="Carrots")
+        ing2 = Ingredient.objects.create(user=self.user, name="Chocolate")
+        recipe = Recipe.objects.create(
+            user=self.user, title="Carrot Halwa", price="15", time_minutes=5
+        )
+        recipe.ingredients.add(ing1)
+
+        params = {"assigned_only": 1}
+
+        res = self.client.get(INGREDIENTS_URL, params)
+
+        s1 = IngredientSerializer(ing1)
+        s2 = IngredientSerializer(ing2)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filtered_ingredients_unique(self):
+        ing = Ingredient.objects.create(user=self.user, name="Carrots")
+        Ingredient.objects.create(user=self.user, name="Chocolate")
+        r1 = Recipe.objects.create(
+            user=self.user, title="Carrot Halwa", price="15", time_minutes=5
+        )
+        r1.ingredients.add(ing)
+        r2 = Recipe.objects.create(
+            user=self.user, title="Carrot Cake", price="15", time_minutes=5
+        )
+        r2.ingredients.add(ing)
+        params = {"assigned_only": 1}
+        res = self.client.get(INGREDIENTS_URL, params)
+        self.assertEqual(len(res.data), 1)

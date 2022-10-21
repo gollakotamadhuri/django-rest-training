@@ -1,4 +1,4 @@
-from core.models import Tag
+from core.models import Recipe, Tag
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -81,3 +81,35 @@ class PrivateTagAPiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         tags = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
+
+    def test_filter_tags_assigned(self):
+        tag1 = Tag.objects.create(user=self.user, name="Sweet")
+        tag2 = Tag.objects.create(user=self.user, name="Dessert")
+        recipe = Recipe.objects.create(
+            user=self.user, title="Carrot Halwa", price="15", time_minutes=5
+        )
+        recipe.tags.add(tag1)
+
+        params = {"assigned_only": 1}
+
+        res = self.client.get(TAG_URL, params)
+
+        s1 = TagSerializer(tag1)
+        s2 = TagSerializer(tag2)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filtered_ingredients_unique(self):
+        tag = Tag.objects.create(user=self.user, name="Sweet")
+        Tag.objects.create(user=self.user, name="Dessert")
+        r1 = Recipe.objects.create(
+            user=self.user, title="Carrot Halwa", price="15", time_minutes=5
+        )
+        r1.tags.add(tag)
+        r2 = Recipe.objects.create(
+            user=self.user, title="Carrot Cake", price="15", time_minutes=5
+        )
+        r2.tags.add(tag)
+        params = {"assigned_only": 1}
+        res = self.client.get(TAG_URL, params)
+        self.assertEqual(len(res.data), 1)
